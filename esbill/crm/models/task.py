@@ -1,4 +1,4 @@
-from esbill.common import event, Aggregate, DTO, UUID
+from esbill.common import event, Aggregate, DTO, UUID, uuid4
 from typing import Optional, List
 from typing_extensions import Self
 
@@ -26,7 +26,7 @@ class TaskDTO(DTO):
         names = ['TaskDTO']
         mixins = [eval('TaskDTO')]
         for mixin in mixin_names:
-            mixins.append(eval(mixin+"Mixin"))
+            mixins.append(eval(mixin+"TypeMixin"))
             names.append(mixin)
 
         names.sort(reverse=True)
@@ -46,7 +46,7 @@ class Task(Aggregate):
         names = ['Task']
         mixins = [eval('Task')]
         for mixin in dto.mixins:
-            mixins.append(eval(mixin+'Mixin'))
+            mixins.append(eval(mixin+'TypeMixin'))
             names.append(mixin)
 
         names.sort(reverse=True)
@@ -58,20 +58,23 @@ class Task(Aggregate):
     def update(self, dto: TaskDTO) -> None:
         self.__dict__.update(dto.__dict__)
 
-class TaskListDTOMixin:
+
+# Task types mixins
+
+class TaskListDTOTypeMixin:
     task_list_id: Optional[UUID]
 
-class TaskListMixin:
+class TaskListTypeMixin:
     pass
 
-class HierarchicalDTOMixin:
+class HierarchicalDTOTypeMixin:
     parent_id: Optional[UUID]
 
-class HierarchicalMixin:
+class HierarchicalTaskTypeMixin:
     pass
 
-class ProcessDTOMixin:
+class ProcessDTOTypeMixin:
     process_id: Optional[UUID]
 
-class ProcessMixin:
+class ProcessTaskTypeMixin:
     pass
