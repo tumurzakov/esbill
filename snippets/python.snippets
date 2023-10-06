@@ -1,0 +1,151 @@
+snippet aggregate
+from esbill.common import event, Aggregate, DTO, UUID
+
+class ${1:`!p snip.rv = ''.join(ele.title() for ele in snip.basename.split('_'))`}DTO(DTO):
+    pass
+
+class ${1}(Aggregate):
+    @event("Created")
+    def __init__(self, dto: ${1}DTO) -> None:
+        self.__dict__.update(dto.__dict__)
+
+    @event("Updated")
+    def update(self, dto: ${1}DTO) -> None:
+        self.__dict__.update(dto.__dict__)
+endsnippet
+
+snippet command
+from uuid import UUID
+
+from esbill.common import Command
+
+from esbill.${2:`!p snip.rv = path.split('/')[-3]`}.models import (
+	${1:`!p snip.rv = ''.join(ele.title() for ele in snip.basename.replace('_command', '').split('_'))`},
+	${1}DTO,
+)
+
+class ${1}Command(Command):
+    def create(self, dto: ${1}DTO) -> UUID:
+        aggregate = ${1}(dto)
+        self.save(aggregate)
+        return aggregate.id
+
+    def update(self, dto: ${1}DTO) -> None:
+        assert dto.id is not None
+        aggregate: ${1} = self.repository.get(dto.id)
+        aggregate.update(dto)
+        self.save(aggregate)
+
+    def get(self, id: UUID) -> ${1}DTO:
+        aggregate: ${1} = self.repository.get(id)
+        return ${1}DTO.from_aggregate(aggregate)
+endsnippet
+
+snippet query
+from typing import List
+from esbill.common import db, Projection, singledispatchmethod
+
+from esbill.${2:`!p snip.rv = path.split('/')[-3]`}.models import (
+	${1:`!p snip.rv = ''.join(ele.title() for ele in snip.basename.replace('_query', '').split('_'))`},
+	${1}DTO,
+)
+
+import logging
+
+class ${1}Query(Projection):
+    @singledispatchmethod
+    def policy(self, domain_event, process_event):
+        """Default policy"""
+
+    @policy.register(${1}.Created)
+    def _(self, domain_event, process_event):
+        dto = domain_event.${3:`!p snip.rv = snip.basename.replace('_query', '')`}_dto
+        dto['id'] = domain_event.originator_id
+        db.save('${3}', dto)
+
+    @policy.register(${1}.Updated)
+    def _(self, domain_event, process_event):
+        dto = domain_event.${3}_dto
+        db.save('${3}', dto)
+
+    def read_all(self) -> List[${1}DTO]:
+        entries = db.read_all('${3}')
+        return [${1}DTO.from_dict(entries[key]) for key in entries]
+endsnippet
+
+snippet router
+from fastapi import FastAPI, APIRouter
+from uuid import UUID
+from esbill.common import Runner
+from esbill.${2:`!p snip.rv = path.split('/')[-3]`} import ${1:`!p snip.rv = ''.join(ele.title() for ele in snip.basename.replace('_router', '').split('_'))`}Command, ${1}Query
+from esbill.${2:`!p snip.rv = path.split('/')[-3]`}.models import ${1}DTO
+import logging
+
+logger = logging.getLogger(__name__)
+
+class ${1}Router:
+    def __init__(self, runner: Runner):
+        self.runner = runner
+        self.router = APIRouter()
+        self.router.add_api_route("/${2}/${3:`!p snip.rv = snip.basename.replace('_router', '')`}", self.list, methods=["GET"])
+        self.router.add_api_route("/${2}/${3}/{id}", self.get, methods=["GET"])
+        self.router.add_api_route("/${2}/${3}", self.create, methods=["POST"])
+        self.router.add_api_route("/${2}/${3}/{id}", self.update, methods=["POST"])
+
+    def list(self):
+        query = self.runner.get(${1}Query)
+        return query.read_all()
+
+    def get(self, id: UUID):
+        cmd = self.runner.get(${1}Command)
+        try:
+            dto = cmd.get(id)
+        except Exception as e:
+            return {"error": e.__class__.__name__}
+        return dto
+
+    def create(self, dto: ${1}DTO):
+        cmd = self.runner.get(${1}Command)
+        try:
+            id = cmd.create(dto)
+        except Exception as e:
+            return {"error": e.__class__.__name__}
+        return id
+
+    def update(self, id: UUID, dto: ${1}DTO):
+        cmd = self.runner.get(${1}Command)
+        try:
+            dto.id = id
+            cmd.update(dto)
+        except Exception as e:
+            return {"error": e.__class__.__name__}
+
+endsnippet
+
+snippet test_command
+from unittest import TestCase
+from esbill.common import UUID, uuid4
+from esbill.${2:`!p snip.rv = path.split('/')[-2]`}  import ${1:`!p snip.rv = ''.join(ele.title() for ele in snip.basename.replace('test_', '').replace('_command', '').split('_'))`}Command
+from esbill.${2}.models import ${1}DTO
+
+class Test${1}Command(TestCase):
+    def test_create(self) -> None:
+        dto = ${1}DTO()
+        cmd = ${1}Command()
+        id = cmd.create(dto)
+        assert id is not None
+        assert isinstance(id, UUID)
+
+    def test_update(self) -> None:
+        dto = ${1}DTO()
+        cmd = ${1}Command()
+        id = cmd.create(dto)
+        assert id is not None
+        assert isinstance(id, UUID)
+
+        dto = ${1}DTO(id=id)
+        cmd.update(dto)
+
+        dto = cmd.get(id)
+        assert dto is not None
+endsnippet
