@@ -19,7 +19,7 @@ class InqueryQuery(Projection):
         dto['id'] = domain_event.originator_id
         db.save('inquery', dto)
 
-    @policy.register(Inquery.Updated) # type: ignore[attr-defined]
+    @policy.register(Inquery.Updated)  # type: ignore[attr-defined]
     def _(self, domain_event, process_event):
         dto = domain_event.inquery_dto
         db.save('inquery', dto)

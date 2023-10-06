@@ -1,14 +1,13 @@
 from esbill.common import event, Aggregate, DTO, UUID
 
-class ChannelDTO(DTO):
-    name: str
-    alias: str
+class TaskStatusDTO(DTO):
+    pass
 
-class Channel(Aggregate):
+class TaskStatus(Aggregate):
     @event("Created")
-    def __init__(self, dto: ChannelDTO) -> None:
+    def __init__(self, dto: TaskStatusDTO) -> None:
         self.__dict__.update(dto.__dict__)
 
     @event("Updated")
-    def update(self, dto: ChannelDTO) -> None:
+    def update(self, dto: TaskStatusDTO) -> None:
         self.__dict__.update(dto.__dict__)

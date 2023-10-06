@@ -63,7 +63,7 @@ class ${1}Query(Projection):
         dto['id'] = domain_event.originator_id
         db.save('${3}', dto)
 
-    @policy.register(${1}.Updated)
+    @policy.register(${1}.Updated)  # type: ignore[attr-defined]
     def _(self, domain_event, process_event):
         dto = domain_event.${3}_dto
         db.save('${3}', dto)

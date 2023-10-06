@@ -1,2 +1,2 @@
-from .command import InqueryCommand
+from .command import InqueryCommand, TaskCommand
 from .query import InqueryQuery
