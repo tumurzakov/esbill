@@ -1,0 +1,3 @@
+[submodule "repositories/eventsourcing"]
+	path = repositories/eventsourcing
+	url = https://github.com/pyeventsourcing/eventsourcing.git
