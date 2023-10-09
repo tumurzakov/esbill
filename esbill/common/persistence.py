@@ -13,7 +13,6 @@ from eventsourcing.persistence import (
 )
 from eventsourcing.utils import get_topic, resolve_topic
 
-
 class PydanticMapper(Mapper):
     def to_stored_event(self, domain_event: DomainEventProtocol) -> StoredEvent:
         topic = get_topic(domain_event.__class__)

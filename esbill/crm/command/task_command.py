@@ -9,7 +9,7 @@ from esbill.crm.models import (
 
 class TaskCommand(Command):
     def create(self, dto: TaskDTO) -> UUID:
-        aggregate = Task.construct(dto)
+        aggregate = Task(dto)
         self.save(aggregate)
         return aggregate.id
 

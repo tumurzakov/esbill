@@ -7,7 +7,11 @@ from .database import JsonDatabase
 
 from eventsourcing.domain import (
     event,
+    DomainEvent,
 )
+
+from eventsourcing.utils import EnvType
+
 
 from uuid import UUID, uuid4
 

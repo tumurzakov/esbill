@@ -22,8 +22,8 @@ class Inquery(Aggregate):
         self.__dict__.update(dto.__dict__)
 
     @event("TaskAdded")
-    def add_task(self, task: TaskDTO) -> UUID:
-        self.tasks.append(task.id)
+    def add_task(self, task_id: UUID) -> None:
+        self.tasks.append(task_id)
 
     def get_tasks(self) -> List[UUID]:
         return self.tasks

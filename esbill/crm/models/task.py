@@ -1,17 +1,7 @@
-from esbill.common import event, Aggregate, DTO, UUID, uuid4
-from typing import Optional, List
+from esbill.common import event, Aggregate, DTO, UUID, uuid4, DomainEvent
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, TypeVar, List
 from typing_extensions import Self
-
-_class_cache = {}
-
-def construct(name:str, mixins:tuple, dict:dict):
-    if name in _class_cache:
-        return _class_cache[name]
-    else:
-        dict['__module__'] = __name__
-        t = type(name, mixins, dict)
-        _class_cache[name] = t
-        return t
+from dataclasses import dataclass
 
 class TaskDTO(DTO):
     creator_id: Optional[UUID] = None
@@ -19,62 +9,43 @@ class TaskDTO(DTO):
     title: Optional[str] = None
     description: Optional[str] = None
     status_id: Optional[UUID] = None
-    mixins: Optional[List[str]] = None
+    extras: Optional[List[Any]] = None
 
-    @staticmethod
-    def construct(mixin_names, **kwargs):
-        names = ['TaskDTO']
-        mixins = [eval('TaskDTO')]
-        for mixin in mixin_names:
-            mixins.append(eval(mixin+"TypeMixin"))
-            names.append(mixin)
+    def __getattr__(self, name: str) -> Any:
+        if name in self.__dict__:
+            return self.__dict__[name]
 
-        names.sort(reverse=True)
+        if self.extras is not None:
+            for extra in self.extras:
+                # due to ussing orjson decoder data could be returned as dict
+                dict_ = extra if isinstance(extra, dict) else extra.__dict__
+                if name in dict_:
+                    return dict_[name]
 
-        task_mixins = [x.replace('DTO', '') for x in mixin_names]
-        dto = construct(''.join(names), tuple(mixins), kwargs)(mixins=task_mixins, **kwargs)
-        return dto
+        raise KeyError(name)
 
+    @dataclass
+    class TaskListExtra:
+        task_list_id: Optional[UUID]
+
+    @dataclass
+    class HierarchicalExtra:
+        parent_id: Optional[UUID]
+
+    @dataclass
+    class ProcessExtra:
+        process_id: Optional[UUID]
+
+    @dataclass
+    class CreateCustomerExtra:
+        customer_name: Optional[str]
+        customer_address: Optional[str]
 
 class Task(Aggregate):
     @event("Created")
     def __init__(self, dto: TaskDTO) -> None:
         self.__dict__.update(dto.__dict__)
 
-    @staticmethod
-    def construct(dto: TaskDTO) -> Self:
-        names = ['Task']
-        mixins = [eval('Task')]
-        for mixin in dto.mixins:
-            mixins.append(eval(mixin+'TypeMixin'))
-            names.append(mixin)
-
-        names.sort(reverse=True)
-
-        task = construct(''.join(names), tuple(mixins), {})(dto)
-        return task
-
     @event("Updated")
     def update(self, dto: TaskDTO) -> None:
         self.__dict__.update(dto.__dict__)
-
-
-# Task types mixins
-
-class TaskListDTOTypeMixin:
-    task_list_id: Optional[UUID]
-
-class TaskListTypeMixin:
-    pass
-
-class HierarchicalDTOTypeMixin:
-    parent_id: Optional[UUID]
-
-class HierarchicalTaskTypeMixin:
-    pass
-
-class ProcessDTOTypeMixin:
-    process_id: Optional[UUID]
-
-class ProcessTaskTypeMixin:
-    pass

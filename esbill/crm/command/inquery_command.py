@@ -11,7 +11,11 @@ from esbill.crm.models import (
     TaskDTO,
 )
 
+from .task_command import TaskCommand
+
 class InqueryCommand(Command):
+    task_cmd: TaskCommand = None
+
     def create(self, dto: InqueryDTO) -> UUID:
         aggregate = Inquery(dto)
         self.save(aggregate)
@@ -29,10 +33,10 @@ class InqueryCommand(Command):
 
     def create_task(self, id: UUID, task_dto: TaskDTO) -> None:
         aggregate: Inquery = self.repository.get(id)
-        task = Task.construct(task_dto)
-        aggregate.add_task(TaskDTO.from_aggregate(task))
-        self.save(aggregate, task)
-        return task.id
+        task_id = self.task_cmd.create(task_dto)
+        aggregate.add_task(task_id)
+        self.save(aggregate)
+        return task_id
 
     def get_tasks(self, id: UUID) -> List[UUID]:
         aggregate: Inquery = self.repository.get(id)
